@@ -1,0 +1,23 @@
+---
+name: CodeQL
+on:     # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  push:
+  pull_request:
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: self-hosted
+
+    strategy:
+      fail-fast: true
+      matrix:
+        # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
+        language: [python]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}

@@ -1,0 +1,16 @@
+---
+name: SDLC
+on:     # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  push:
+  pull_request:
+jobs:
+  sdlc:
+    runs-on: self-hosted
+    steps:
+      - name: bootstrap
+        run: sdlc/bootstrap
+      - name: build
+        run: sdlc/build
+      - name: test
+        run: sdlc/test
