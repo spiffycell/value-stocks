@@ -1,0 +1,35 @@
+---
+version: '3.9'
+services:
+  value-stocks: &value-stocks
+    image: value-stocks
+    read_only: true
+    build:
+      context: src/
+      labels:
+        # static labels
+        io.github.spiffycell.name: value-stocks
+        io.github.spiffycell.description: Vulnerability scanner and reporter
+        io.github.spiffycell.vendor: spiffycell
+        io.github.spiffycell.vcs-url: https://github.com/spiffycell/value-stocks
+
+        # dynamic variables from sdlc/vars, created by sdlc/build
+        io.github.spiffycell.version: ${VERSION}
+        io.github.spiffycell.build-date: ${BUILD_DATE}
+        io.github.spiffycell.vcs-ref: ${VCS_REF}
+        io.github.spiffycell.usage: ${VCS_URL}/blob/${VCS_REF}/README.md
+        io.github.spiffycell.license: MIT
+        io.github.spiffycell.dockerfile: src/Dockerfile
+        io.github.spiffycell.vcs-type: Git
+
+  pylint:
+    <<: *value-stocks
+    entrypoint: /opt/value-stocks/pylint
+
+  optimistic:
+    extends: value-stocks
+    image: spiffycell/value-stocks
+
+  pessimistic:
+    extends: value-stocks
+    image: spiffycell/value-stocks:${VERSION}
