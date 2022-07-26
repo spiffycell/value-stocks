@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -eEu
+set -o pipefail
+
+echo "[*] Starting bootstrap"
+. sdlc/environment.sh
+
+DEPS=(
+  gcc
+  g++
+  docker
+  docker-compose
+  git
+  pip3
+  python3
+)
+
+errors=()
+for dep in "${DEPS[@]}"; do
+  if ! command -v "${dep}"; then
+    errors+=("${dep}")
+  fi
+done
+
+if [[ ${#errors[@]} -ne 0 ]]; then
+  echo "[-] Please manually install these dependencies"
+
+  for error in "${errors[@]}"; do
+    echo "  ${error}"
+  done
+
+  exit 1
+fi
+
+pip3 install --user -r sdlc/requirements.txt
+pre-commit install-hooks
+
+touch sdlc/.bootstrap
+echo "[+] Bootstrap: OK"

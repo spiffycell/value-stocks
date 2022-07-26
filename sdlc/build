@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eEu
+set -o pipefail
+
+. sdlc/functions.sh
+
+BUILD_DATE="$(date +%Y%m%d%H%M)"
+
+cat <<EOF >sdlc/vars
+export BUILD_DATE="${BUILD_DATE}"
+export VCS_REF="$(git rev-parse --short HEAD)"
+export VERSION="$(cut -d: -f1-2 <<<"${BUILD_DATE}" | tr "T:" . | tr -d '-')"
+EOF
+. sdlc/vars
+
+# At this point, the above vars are set and viewable from this script
+# at runtime
+#
+# BUT when docker-compose is run, they are not inherited
+docker-compose build
+
+echo
+echo "[*] Build was successful!"
+echo
+
+docker inspect value-stocks
