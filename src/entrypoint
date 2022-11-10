@@ -17,50 +17,50 @@ EQUITY_TO_DEBT_THRESHOLD = os.environ.get('EQUITY_TO_DEBT_THRESHOLD', 1)
 FREE_CASH_FLOW_THRESHOLD = os.environ.get('FREE_CASH_FLOW_THRESHOLD', 1)
 
 
-def run(infile, attrs):
+def run(infile):
     """
     Does the actual processing of the data
     """
     snp = pd.read_csv(infile)
 
-    tickers = list(snp.to_dict()['Symbol'].values())
+    tickers = list(snp.to_dict()['symbol'].values())
+
+    attrs = Metrics()
 
     for i in range(0, len(tickers)):
+        try:
+            print(tickers[i])
+            # grab the desired stock attributes
+            symbol = yf.Ticker(tickers[i])
+            print(symbol.ticker)
+            roa = round(attrs.avg_return_on_assets(symbol), 2)
+            roe = round(attrs.avg_return_on_equity(symbol), 2)
+            mce = attrs.market_cap_to_equity(symbol)
+            niev = round(attrs.net_income_to_ev(symbol), 2)
+            aegr = attrs.avg_earnings_growth_rate(symbol)
+            afcf = attrs.avg_fcf_growth_rate(symbol)
+            inc = attrs.inc_date(symbol)
+            avrt = round(attrs.average_returns(roa, roe), 2)
+            wacc = round(attrs.wacc(symbol, avrt), 2)
+            fytd = round(attrs.years_to_double(wacc, avrt), 2)
 
-        # grab the desired stock attributes
-        symbol = yf.Ticker(tickers[i])
-        ey = attrs.earnings_yield(symbol)
-        roc = attrs.return_on_capital(symbol)
-        roa = attrs.return_on_assets(symbol)
-        eqd = attrs.equity_to_debt_ratio(symbol)
-        fcf = attrs.free_cash_flow(symbol)
-        mce = attrs.market_cap_to_equity(symbol)
-        nn = attrs.net_net(symbol)
 
-        # filter the values against pre-set thresholds
-        if ey < EARNINGS_YIELD_THRESHOLD:
-            print('[-] EY TOO LOW')
-            ey = 0
+            # input scores into spreadsheet
+            snp.loc[i, 'roa'] = roa
+            snp.loc[i, 'roe'] = roe
+            snp.loc[i, 'mce'] = mce
+            snp.loc[i, 'niev'] = niev
+            snp.loc[i, 'aegr'] = aegr
+            snp.loc[i, 'afcf'] = afcf
+            snp.loc[i, 'inc'] = inc
+            snp.loc[i, 'avrt'] = avrt
+            snp.loc[i, 'wacc'] = wacc
+            snp.loc[i, 'ytd'] = fytd
 
-        if roa < RETURN_ON_ASSETS_THRESHOLD:
-            print('[-] ROA TOO LOW')
-            roa = 0
+            snp.to_csv(infile, index=False)
 
-        if eqd < EQUITY_TO_DEBT_THRESHOLD:
-            print('[-] DE TOO HIGH')
-            eqd = 0
-
-        if fcf == FREE_CASH_FLOW_THRESHOLD:
-            print('[-] NEGATIVE FCF')
-
-        # input scores into spreadsheet
-        snp.loc[i, 'ebit / ev'] = ey
-        snp.loc[i, 'roa'] = roa
-        snp.loc[i, 'equity / debt'] = eqd
-        snp.loc[i, 'market cap / equity'] = mce
-        snp.loc[i, 'net-net'] = nn
-
-        snp.to_csv(infile, index=False)
+        except KeyboardInterrupt:
+            continue
 
 
 def main():
@@ -73,12 +73,11 @@ def main():
             CSV.
     """
 
-    files = ["data/sp500.csv", "data/ndaq.csv", "data/cheap.csv"]
-    attrs = Metrics()
+    #files = ["data/sp500.csv", "data/ndaq.csv", "data/cheap.csv"]
+    files = ["data/sp500.csv"]
 
     for infile in files:
-        value_read = Thread(target=run, args=(infile,attrs,))
-        value_read.start()
+        run(infile)
 
 
 if __name__ == "__main__":

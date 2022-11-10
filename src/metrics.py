@@ -1,10 +1,13 @@
+from os import getenv
+import re
+
 class Metrics:
-    def __init__(self, debug):
+    def __init__(self):
         """
         Initialization of business metrics and \
                 financial accounting attributes.
         """
-        self.debug = debug
+        self.debug = getenv("DEBUG", False)
 
 
     def net_net(self, symbol):
@@ -27,40 +30,32 @@ class Metrics:
             current_assets = balance_sheet.loc["Total Current Assets"][0]
         except:
             current_assets = 0
-        print(f"current assets: {current_assets}")
 
         try:
             receivables = balance_sheet.loc["Net Receivables"][0]
-            print(f"receivables: {receivables}")
         except KeyError:
             receivables = 0
-            print(f"receivables: {receivables}")
 
         try:
             inventory = balance_sheet.loc["Inventory"][0]
-            print(f"inventory: {inventory}")
         except KeyError:
             inventory = 0
-            print(f"inventory: {inventory}")
 
         try:
             liabilities = balance_sheet.loc["Total Liab"][0]
         except:
             liabilities = 0
 
-        print(f"liabilities: {liabilities}")
 
         try:
             nnwc = current_assets + (0.75 * receivables) + (0.5 * inventory) - liabilities
         except:
             nnwc = 0
-        print(f"nnwc: {nnwc}")
 
         try:
             market_cap = symbol.info['marketCap']
         except:
             market_cap = 0
-        print(f"market cap: {market_cap}")
 
         try:
             net_ratio = round(market_cap / nnwc, 2)
@@ -84,7 +79,9 @@ class Metrics:
                 result in profit.
         """
         try:
+            print(symbol.ticker)
             market_cap = symbol.info['marketCap']
+            print(f'market_cap: {market_cap}')
         except:
             market_cap = 0
 
@@ -92,6 +89,7 @@ class Metrics:
 
         try:
             equity = balance_sheet.loc["Total Stockholder Equity"][0]
+            print(f'equity: {equity}')
         except:
             equity = 0
 
@@ -100,7 +98,58 @@ class Metrics:
         except:
             mce = 0
 
+        print(f"market cap to equity: {mce}")
         return mce
+
+
+    def avg_return_on_equity(self, symbol):
+        cashflow = symbol.cashflow
+        b_sheet = symbol.balance_sheet
+
+        growth = []
+
+        try:
+            for i in range(0, len(cashflow.loc['Net Income']) - 1):
+                growth.append((cashflow.loc['Net Income'][i]) / b_sheet.loc['Total Stockholder Equity'][i])
+        except:
+            growth = []
+
+        if len(growth) == 0:
+            avg = 0
+        else:
+            avg = sum(growth) / len(growth)
+        print(f"Avg return on equity: {avg}%")
+        return avg
+        
+
+    def return_on_equity(self, symbol):
+        try:
+            net_income = symbol.cashflow.loc["Net Income"][0]
+        except:
+            net_income = 0
+
+        balance_sheet = symbol.get_balance_sheet()
+
+        try:
+            equity = balance_sheet.loc["Total Stockholder Equity"][0]
+            return net_income / equity
+        except:
+            roe = 0
+        return roe
+
+
+    def inc_date(self, symbol):
+        try:
+            inc = re.findall(r'[1]+[7-9]+[0-9]+[0-9]+', symbol.info['longBusinessSummary'])
+            print(f'inc date: {inc}')
+            if not inc:
+                inc = ''
+            elif len(inc) > 1:
+                inc = inc[-1]
+            return inc
+        except:
+            inc = ''
+            return inc
 
 
     def free_cash_flow(self, symbol):
@@ -153,19 +202,16 @@ class Metrics:
             debt = balance_sheet.loc["Total Liab"][0]
         except:
             debt = 0
-        print(f"debt: {debt}")
 
         try:
             equity = balance_sheet.loc["Total Stockholder Equity"][0]
         except:
             equity = 0
-        print(f"equity: {equity}")
 
         try:
             eqd = round(equity / debt, 2)
         except:
             eqd = 0
-        print(f"equity-to-debt: {eqd}")
         return eqd
 
 
@@ -191,40 +237,53 @@ class Metrics:
             ebit = symbol.earnings.values[-1][-1]
         except:
             ebit = 0
-        print(f"ebit: {ebit}")
         balance_sheet = symbol.get_balance_sheet()
 
         try:
             cce = balance_sheet.loc["Cash"][0]
         except:
             cce = 0
-        print(f"current assets: {cce}")
 
         try:
             total_debt = balance_sheet.loc["Long Term Debt"][0]
-            print(f"total debt: {total_debt}")
         except:
             total_debt = 0
-            print(f"total debt: {total_debt}")
 
         try:
             market_cap = symbol.info['marketCap']
         except:
             market_cap = 0
-        print(f"market cap: {market_cap}")
 
         try:
             ev = market_cap + total_debt - cce
         except:
             ev = 0
-        print(f"ev: {ev}")
 
         try:
             earnings_yield = round(ebit / ev, 2)
         except:
             earnings_yield = 0
-        print(f"earnings yield: {earnings_yield}")
         return earnings_yield
+
+
+    def avg_return_on_assets(self, symbol):
+        cashflow = symbol.cashflow
+        b_sheet = symbol.balance_sheet
+
+        growth = []
+
+        try:
+            for i in range(0, len(cashflow.loc['Net Income']) - 1):
+                growth.append((cashflow.loc['Net Income'][i]) / b_sheet.loc['Total Assets'][i])
+        except:
+            growth = []
+
+        if len(growth) == 0:
+            avg = 0
+        else:
+            avg = sum(growth) / len(growth)
+        print(f"Avg return on assets: {avg}%")
+        return avg
 
 
     def return_on_assets(self, symbol):
@@ -242,20 +301,48 @@ class Metrics:
             net_income = symbol.cashflow.loc["Net Income"][0]
         except:
             net_income = 0
-        print(f"net income: {net_income}")
 
         try:
             total_assets = symbol.balance_sheet.loc["Total Assets"][0]
         except:
             total_assets = 0
-        print(f"total assets: {total_assets}")
 
         try:
-            roa = round(net_income / total_assets, 2)
+            roa = net_income / total_assets
         except:
             roa = 0
-        print(f"return on assets: {roa}")
         return roa
+
+
+    def net_income_to_ev(self, symbol):
+        try:
+            net_income = symbol.cashflow.loc["Net Income"][0]
+        except:
+            net_income = 0
+
+        try:
+            market_cap = symbol.info['marketCap']
+        except:
+            niev = 0
+            return niev
+
+        try:
+            total_debt = balance_sheet.loc["Long Term Debt"][0]
+        except:
+            total_debt = 0
+        try:
+            cce = balance_sheet.loc["Cash"][0]
+        except:
+            cce = 0
+
+        if market_cap is None:
+            niev = 0
+            return niev
+        else:
+            ev = market_cap + total_debt - cce
+            niev = net_income / ev
+
+        return niev
 
 
     def return_on_capital(self, symbol):
@@ -274,7 +361,6 @@ class Metrics:
             ebit = symbol.earnings.values[-1][-1]
         except:
             ebit = 0
-        print(f"ebit: {ebit}")
 
         balance_sheet = symbol.get_balance_sheet()
 
@@ -282,31 +368,120 @@ class Metrics:
             current_assets = balance_sheet.loc["Total Current Assets"][0]
         except:
             current_assets = 0
-        print(f"current assets: {current_assets}")
 
         try:
             current_liabilities = balance_sheet.loc["Total Current Liabilities"][0]
         except:
             current_liabilities = 0
-        print(f"current liabilities: {current_liabilities}")
 
         try:
             nwc = current_assets - current_liabilities
         except:
             nwc = 0
-        print(f"net working capital: {nwc}")
 
         try:
             fixed_assets = balance_sheet.loc["Property Plant Equipment"][0]
-            print(f"fixed assets: {fixed_assets}")
         except:
             fixed_assets = 0
-            print(f"fixed assets: {fixed_assets}")
 
         try:
             roc = round(ebit / (nwc + fixed_assets), 2)
         except:
             roc = 0
-        print(f"return on capial: {roc}")
         return roc
+
+    def avg_earnings_growth_rate(self, symbol):
+        earnings = symbol.earnings.values
+        growth = []
+
+        for i in range(0, len(earnings) - 1):
+            growth.append((earnings[i + 1][1] - earnings[i][1]) / earnings[i][1])
+
+        if len(growth) == 0:
+            avg = 0
+        else:
+            avg = round((sum(growth) / len(growth)) * 100, 2)
+        print(f"Avg earnings growth rate: {avg}%")
+        return avg
+
+
+    def avg_fcf_growth_rate(self, symbol):
+        try:
+            fcf = symbol.cashflow.loc['Total Cash From Operating Activities'] - symbol.cashflow.loc['Capital Expenditures']
+        except:
+            try:
+                fcf = symbol.cashflow.loc['Total Cash From Operating Activities']
+            except:
+                fcf = []
+
+        growth = []
+
+        for i in range(0, len(fcf) - 1):
+            growth.append((fcf[i + 1] - fcf[i]) / fcf[i])
+
+        try:
+            avg = round((sum(growth) / len(growth)) * 100, 2)
+        except:
+            avg = 0 
+        print(f"Avg FCF growth rate: {avg}%")
+        return avg
+
+
+    def wacc(self, symbol, avg_ret):
+        """ Working Average Costs of Capital """
+
+        try:
+            mvd = symbol.balance_sheet.loc['Long Term Debt'][0]
+        except:
+            mvd = 0
+            print(f"market vlaue of debt: {mvd}")
+
+        try:
+            mve = symbol.balance_sheet.loc['Total Stockholder Equity'][0] 
+        except:
+            mve = 0
+        print(f"market value of equity: {mve}")
+
+        tsc = mvd + mve
+        print(f"total value of source of capital: {tsc}")
+
+        cost_of_equity = avg_ret
+
+        try:
+            cost_of_debt = abs(symbol.financials.loc['Interest Expense'][0] / mvd)
+        except:
+            cost_of_debt = 0
+        print(f"cost of debt: {cost_of_debt}")
+
+        try:
+            tax_rate = round(abs(symbol.financials.loc['Income Tax Expense'][0] / symbol.financials.loc['Ebit'][0]), 2)
+        except:
+            tax_rate = 0
+        print(f"tax rate: {tax_rate}")
+
+        try:
+            debt_capital_value = ((mvd / tsc) * cost_of_debt * (1 - tax_rate))
+        except:
+            debt_capital_value = 0
+
+        try:
+            equity_capital_value = ((mve / tsc) * cost_of_equity)
+        except:
+            equity_capital_value = 0
+
+        return (debt_capital_value + equity_capital_value)
+
+
+    def average_returns(self, roa, roe):
+        return (roa + roe / 2)
+
+
+    def years_to_double(self, wacc, roa):
+        try:
+            ytd = 1 / roa
+        except:
+            ytd = 10
+        fytd = (wacc * 10) + ytd
+
+        return fytd
 

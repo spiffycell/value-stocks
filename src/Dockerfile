@@ -1,5 +1,7 @@
-FROM alpine:3.16.0
-RUN apk add --no-cache py3-pip
+FROM alpine:3.16.2
+RUN apk add --no-cache build-base \
+	py3-pip \
+	:
 
 COPY requirements.txt /opt/value-stocks/
 RUN pip3 install --no-cache-dir -r /opt/value-stocks/requirements.txt
