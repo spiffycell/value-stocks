@@ -43,6 +43,10 @@ def run(infile):
             avrt = round(attrs.average_returns(roa, roe), 2)
             wacc = round(attrs.wacc(symbol, avrt), 2)
             fytd = round(attrs.years_to_double(wacc, avrt), 2)
+            dar = round(attrs.debt_to_assets(symbol), 2)
+            incearn = round(attrs.interest_to_earnings(symbol), 2)
+            exp_rat = round(attrs.expense_ratio(symbol), 2)
+            roc = round(attrs.avg_return_on_capital(symbol), 2)
 
 
             # input scores into spreadsheet
@@ -56,6 +60,10 @@ def run(infile):
             snp.loc[i, 'avrt'] = avrt
             snp.loc[i, 'wacc'] = wacc
             snp.loc[i, 'ytd'] = fytd
+            snp.loc[i, 'exp_rat'] = exp_rat
+            snp.loc[i, 'debt / assets'] = dar
+            snp.loc[i, 'inc / earn'] = incearn
+            snp.loc[i, 'roc'] = roc
 
             snp.to_csv(infile, index=False)
 
